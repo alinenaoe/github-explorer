@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import React, { useState, FormEvent } from 'react';
 import { FiChevronRight } from 'react-icons/fi';
-import { Title, Form, Repositories } from './styles';
+import * as S from './styles';
 import logo from '../../assets/logo.svg';
 import api from '../../services/api';
 
@@ -16,6 +16,7 @@ interface Repository {
 
 const Dashboard: React.FC = () => {
   const [searchedRepository, setSearchedRepository] = useState('');
+  const [inputError, setInputError] = useState('');
   const [repositories, setRepositories] = useState<Repository[]>([]);
 
   async function handleAddRepository(
@@ -23,30 +24,44 @@ const Dashboard: React.FC = () => {
   ): Promise<void> {
     event.preventDefault();
 
-    const response = await api.get<Repository>(`repos/${searchedRepository}`);
-    const repository = response.data;
+    if (!searchedRepository) {
+      setInputError(
+        'Please type the name of the repository you are looking for :)',
+      );
+      return;
+    }
 
-    setRepositories([...repositories, repository]);
-    setSearchedRepository('');
+    try {
+      const response = await api.get<Repository>(`repos/${searchedRepository}`);
+      const repository = response.data;
+
+      setRepositories([...repositories, repository]);
+      setSearchedRepository('');
+      setInputError('');
+    } catch (err) {
+      setInputError('Your search had no results :(');
+    }
   }
 
   return (
     <>
       <img src={logo} alt="Github Explorer" />
-      <Title>What&apos;s on on Github?</Title>
+      <S.Title>What&apos;s on on Github?</S.Title>
       <h2>Explore repositories, find projects!</h2>
 
-      <Form onSubmit={handleAddRepository}>
+      <S.Form hasError={!!inputError} onSubmit={handleAddRepository}>
         <input
           type="text"
-          placeholder="Type here the repository name"
+          placeholder="Type here, e.g.: username/repository-name"
           value={searchedRepository}
           onChange={e => setSearchedRepository(e.target.value)}
         />
         <button type="submit">Search</button>
-      </Form>
+      </S.Form>
 
-      <Repositories>
+      {inputError && <S.Error>{inputError}</S.Error>}
+
+      <S.Repositories>
         {repositories.map(repository => (
           <a key={repository.full_name} href="https://github.com/alinenaoe">
             <img
@@ -60,7 +75,7 @@ const Dashboard: React.FC = () => {
             <FiChevronRight size={20} />
           </a>
         ))}
-      </Repositories>
+      </S.Repositories>
     </>
   );
 };
